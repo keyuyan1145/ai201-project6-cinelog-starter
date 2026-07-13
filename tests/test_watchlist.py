@@ -1,9 +1,7 @@
 """
-tests/test_collection.py — CineLog
+tests/test_watchlist.py — CineLog
 
-Tests for the collection service.
-These tests demonstrate the patterns used across the codebase — read them
-before writing your own tests for the watchlist feature (see Comment 4).
+Tests for the watchlist service.
 """
 
 import pytest
