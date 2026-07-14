@@ -1,5 +1,7 @@
 # PR Response Doc — CineLog Watchlist Feature
 
+![Git Log](image.png)
+
 ## AI Usage
 <!-- Fill in at the end — how you used AI tools during this project -->
 
