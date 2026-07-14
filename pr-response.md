@@ -29,9 +29,9 @@
 **Engagement with reviewer's point:** Agree with this suggestion. If sorted by title, then this mixed various added films. By argument, user's taste might have changed since they added the first few films to the watchlist. Sorting by title will bring visibility to those older films in the list, but they might no longer be of interest to the user while increasing friction point for user to select a film of interest to start playing. 
 
 ## Comment 6 — Rebase
-**What conflicted:** 
-**How I resolved it:** 
-**How I verified no conflict remains:** 
+**What conflicted:** `.gitignore` appeared as the only conflict. The difference between local and remote main was `pytest_cache` and 2 packages (`venv` and `.venv/`).
+**How I resolved it:** Keep the current version since my branch has all the contents as the remote, plus the `pytest_cache` which was applicable due to tests. 
+**How I verified no conflict remains:** Able to run the `git add .gitignore` and `git rebase --continue` successfully after resolving conflicts. Then, I ran the entire test suite with `pytest /tests -v` to ensure all tests should be passing as before. However, tests with `WatchlistEntry` references started to break, since the remote main doesn't have this model added. To resolve the test failures, I have bought back the `WatchlistEntry` class and all tests are currently passing as before.
 
 ## PR Description
 <!-- Written at the end — feature overview, design decisions, manual testing steps -->
