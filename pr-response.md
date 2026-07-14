@@ -1,7 +1,6 @@
 # PR Response Doc — CineLog Watchlist Feature
 
 ![Git Log](image.png)
-
 ## AI Usage
 <!-- Fill in at the end — how you used AI tools during this project -->
 
@@ -37,3 +36,66 @@
 
 ## PR Description
 <!-- Written at the end — feature overview, design decisions, manual testing steps -->
+
+### Overview
+
+This PR adds the **watchlist** feature: a way for users to save films they intend to watch later, separate from their `collection` (films they've already watched and rated). It introduces:
+
+- `WatchlistEntry` model (`models.py`) — tracks `user_id`, `film_id`, `date_added`, and `public`, with a unique constraint on `(user_id, film_id)` to prevent duplicate entries at the DB level.
+- `services/watchlist_service.py` — `add_to_watchlist(user_id, film_id)` and `get_watchlist(user_id)`, raising `FilmNotFoundError` for an unknown film and `AlreadyInWatchlistError` for a duplicate add.
+- `routes/watchlist/watchlist.py` — registered at `/watchlist`:
+  - `GET /watchlist/<user_id>` — returns the user's watchlist as a list of film dicts, each annotated with `date_added` and `public`.
+  - `POST /watchlist/<user_id>/add` — body `{ "film_id": <id> }`, adds a film to the watchlist and returns the new entry (`201`), or `404`/`409` on the error cases above.
+
+### Design decisions
+
+1. **Visibility default — `public=True`.** New watchlist entries default to public. This supports user-to-user engagement around shared film interests (e.g. seeing what others want to watch) and gives visibility into aggregate interest in a film. Tradeoff: this exposes a user's film preferences by default, which not every user may want — see Comment 4 above for the full reasoning and the acknowledged privacy tradeoff.
+2. **Sort order — `date_added` descending.** `get_watchlist()` returns the most recently added films first, since the newest additions are the closest reflection of a user's current taste and what they're most likely to want to watch next. See Comment 5 above for why this was chosen over sorting by title.
+
+### Manual testing
+
+Start the app (`python app.py` or however it's run locally) and confirm a `user` and at least one `film` already exist in the DB (needed to satisfy the foreign keys below). Then, using `curl` or Postman:
+
+1. **Add a film to the watchlist (happy path)**
+   ```
+   POST /watchlist/<user_id>/add
+   Body: { "film_id": <existing_film_id> }
+   ```
+   Expect `201` with the new entry, including `"public": true` and a `date_added` timestamp.
+
+2. **Add a second, different film to the same watchlist**
+   ```
+   POST /watchlist/<user_id>/add
+   Body: { "film_id": <another_existing_film_id> }
+   ```
+   Expect `201`.
+
+3. **View the watchlist and check sort order**
+   ```
+   GET /watchlist/<user_id>
+   ```
+   Expect both films back, newest-added film first (i.e. the film added in step 2 appears before the one from step 1).
+
+4. **Attempt to re-add the same film (deduplication)**
+   ```
+   POST /watchlist/<user_id>/add
+   Body: { "film_id": <film_id_from_step_1> }
+   ```
+   Expect `409` with an error message stating the film is already in the watchlist. Confirm via `GET /watchlist/<user_id>` that no duplicate entry was created.
+
+5. **Attempt to add a nonexistent film**
+   ```
+   POST /watchlist/<user_id>/add
+   Body: { "film_id": "00000000-0000-0000-0000-000000000000" }
+   ```
+   Expect `404` with an error message stating no film was found for that id.
+
+6. **Attempt to add without a `film_id`**
+   ```
+   POST /watchlist/<user_id>/add
+   Body: {}
+   ```
+   Expect `400` with `{"error": "film_id is required"}`.
+
+7. **Confirm the `public` field is present on every entry**
+   Re-run `GET /watchlist/<user_id>` and check each film dict includes `"public": true`, matching the default-visibility design decision above.
