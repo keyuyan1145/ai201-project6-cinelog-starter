@@ -4,6 +4,16 @@
 ## AI Usage
 <!-- Fill in at the end — how you used AI tools during this project -->
 
+I used Claude Code (AI assistant) at several points during this project:
+
+1. **Codebase orientation / understanding a pattern.** Asked it to compare `get_collection()` in `collection_service.py` against `get_watchlist()` in `watchlist_service.py` and explain when the `.join(Film)` in `get_watchlist()` is actually required. It walked through the query and pointed out that the join wasn't doing any filtering/sorting work in this codebase's usage (neither `order_by` nor `filter_by` references a `Film` column) — its only real effect is turning the query into an INNER JOIN, which would silently drop orphaned `WatchlistEntry` rows if a film were ever deleted without cascading. That also surfaced an inconsistency: `get_collection()` has no equivalent guard, so it isn't protected the same way. This was purely codebase orientation — I didn't take further action on the inconsistency itself, just used the explanation to understand the existing pattern.
+
+2. **Verifying commit format.** Asked it to check my `git log --oneline` history against Conventional Commits conventions and flag any commits bundling multiple logical changes. It flagged: a typo in one message, `.gitignore` categorized as `docs` instead of `chore`, several commits referencing PR review-comment numbers (`"complete comment #2"`) instead of describing the actual change, and one commit with no blank line between subject and body that bundled three unrelated changes (model+endpoint, an unnamed bug fix, and unnamed "more changes") into a single commit. I rebased to reword/split most of these into atomic, content-focused commits; the one bundled commit was left as-is since it was authored by another contributor, not me.
+
+3. **Drafting the PR description and test plan.** Asked it to draft the "PR Description" section below (overview, the two design decisions, manual testing steps) and to add unit tests. While writing the manual testing steps, it caught a real gap: `routes/watchlist/watchlist.py` never caught `FilmNotFoundError`/`AlreadyInWatchlistError`, unlike the equivalent routes in `collection.py` — meaning the documented `404`/`409` test steps would have actually returned an unhandled `500`. I had it fix the route to catch those exceptions properly, then add `tests/test_watchlist_routes.py` to cover the route-level status codes end-to-end, on top of the existing service-level tests.
+
+Comments 4 and 5 (default visibility and sort order) reflect my own reasoning, not AI drafting — I didn't use AI to generate or stress-test those arguments before writing them.
+
 ## Comment 1 — Rename
 **What I did:** use the find all references feature on VSCode to identify all usages/calls to `save_to_watchlist()` and rename each references.
 **How I verified:** after all refactoring, I did a global search on `save_to_watchlist` and ensure that there is no match in this repo.
